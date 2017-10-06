@@ -1,0 +1,18 @@
+# application
+spring:
+  application:
+    name: drm_controller
+  http:
+      multipart:
+        max-file-size: 100MB
+        max-request-size: 100MB
+        enabled: true
+
+# server
+server:
+  port: 9090
+
+# logging
+logging:
+  level:
+    drm.contentprovider: trace

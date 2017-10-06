@@ -1,0 +1,31 @@
+<!--
+Copyright (c) 2017 University of Stuttgart.
+All rights reserved. This program and the accompanying materials
+are made available under the terms of the Eclipse Public License v2.0
+and the Apache License 2.0 which both accompany this distribution,
+and are available at http://www.eclipse.org/legal/epl-v20.html
+and http://www.apache.org/licenses/LICENSE-2.0
+
+Contributors:
+     Sebastian Kunz - initial implementation
+-->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Security Check</title>
+</head>
+<body>
+<div th:if="${param.error}">
+    Falscher Nutzername und Passwort.
+</div>
+<div th:if="${param.logout}">
+    Du bist ausgeloggt.
+</div>
+<h1>Bitte einloggen</h1>
+<form th:action="@{/login}" method="post">
+    <div><label> Nutzername : <input type="text" name="username"/> </label></div>
+    <div><label> Passwort: <input type="password" name="password"/> </label></div>
+    <div><input type="submit" value="Sign In"/></div>
+</form>
+</body>
+</html>

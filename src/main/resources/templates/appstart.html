@@ -1,0 +1,1279 @@
+<!--
+Copyright (c) 2017 University of Stuttgart.
+All rights reserved. This program and the accompanying materials
+are made available under the terms of the Eclipse Public License v2.0
+and the Apache License 2.0 which both accompany this distribution,
+and are available at http://www.eclipse.org/legal/epl-v20.html
+and http://www.apache.org/licenses/LICENSE-2.0
+
+Contributors:
+     Sebastian Kunz - initial implementation
+-->
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>ODRL Rechtedefinition Prototyp</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+<body>
+
+<style type="text/css">
+    .lbl {
+        text-align: right;
+        width: 100px;
+        white-space: nowrap;
+    }
+
+    .fld {
+        width: 100%;
+    }
+
+    .frm {
+        display: inline-block;
+    }
+
+    .redtext {
+        color: red;
+    }
+</style>
+
+<h1>ODRL Lizenz Erstellung - Prototyp</h1>
+Zur Erstellung einer ODRL Lizenz für eine spezifische CSAR Datei, Datei hochladen und im Anschluss Lizenz Parameter
+setzen. Ist nur eine Erstellung einer Lizenz erforderlich, kann der erste Schritt übersprungen werden.
+<h2> 1. CSAR hochladen</h2>
+<form method="POST" enctype="multipart/form-data" action="/upload">
+    <fieldset>
+        <legend>Einfügen der CSAR (optional)</legend>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <table>
+            <tr>
+                <td>CSAR hinzufügen:</td>
+                <td><input type="file" name="file"/>
+                </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><input type="submit" value="Hochladen"/></td>
+            </tr>
+        </table>
+        <p class="redtext" th:if="${fileError}" th:text="${fileError}"/>
+    </fieldset>
+</form>
+<div th:if="${csar}">
+    <h3 th:text="${csar}"/>
+    <form action="/reset" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <p><input type="submit" value="Datei löschen"/>
+            Achtung, durch das Löschen der Datei werden auch alle Eingabefelder zurückgesetzt!</p>
+    </form>
+    <hr/>
+</div>
+<h2>2. Lizenz Parameter setzen</h2>
+<form action="#" th:action="@{/appstart.html}" th:object="${xmlFormResult}" method="post">
+    <fieldset>
+        <legend>Allgemein</legend>
+        <table>
+            <tr>
+                <td class="lbl">Lizenz Dateiname:</td>
+                <td><input class="fld" type="text" th:field="*{filename}" autocomplete="off"/></td>
+                <td class="lbl" th:if="${#fields.hasErrors('filename')}" th:errors="*{filename}">Name Error</td>
+            </tr>
+            <tr>
+                <dif th:if="${csar}">
+                    <td class="lbl">CSAR UID:</td>
+                    <td><input class="fld" type="text" th:field="*{odrlBase.oexAgreement.oexAsset.oexContext.uid}"
+                               th:placeholder="${csarid}" readonly="readonly"/></td>
+                </dif>
+                <dif th:unless="${csar}">
+                    <td class="lbl">CSAR UID:</td>
+                    <td><input class="fld" type="text" th:field="*{odrlBase.oexAgreement.oexAsset.oexContext.uid}"/>
+                    </td>
+                    <td class="lbl" th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexAsset.oexContext.uid')}"
+                        th:errors="*{odrlBase.oexAgreement.oexAsset.oexContext.uid}">ID Error
+                    </td>
+                </dif>
+            </tr>
+            <tr>
+                <td class="lbl">Kontext Version:</td>
+                <td><input class="fld" type="text" th:field="*{odrlBase.oexContext.version}"/></td>
+                <td class="lbl" th:if="${#fields.hasErrors('odrlBase.oexContext.version')}"
+                    th:errors="*{odrlBase.oexContext.version}">
+                    Version Error
+                </td>
+            </tr>
+        </table>
+    </fieldset>
+    <br/>
+    <fieldset>
+        <legend>Berechtigungen</legend>
+        <!--Display-->
+        <fieldset>
+            <legend>Anzeige</legend>
+            <!--General-->
+            <div class="frm">
+                <fieldset>
+                    <legend>Allgemein - Einschränkungen</legend>
+                    <table>
+                        <tr>
+                            <td><input type="checkbox" id="checkboxDisplayCount"
+                                       onclick="disableCheckboxConditioned(id)"/><label>Anzahl:</label></td>
+                            <td><input class="fld" type="text" id="checkboxDisplayCountChecked"
+                                       th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.count}"
+                                       disabled="true"/></td>
+                            <td class="lbl"
+                                th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.count')}"
+                                th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.count}">Name
+                                Error
+                            </td>
+                        </tr>
+                    </table>
+                </fieldset>
+            </div>
+            <div class="frm">
+                <fieldset>
+                    <legend>Zeit - Einschränkungen</legend>
+                    <table>
+                        <tr>
+                            <td><input type="checkbox" id="checkboxDisplayAccumulated"
+                                       onclick="disableCheckboxConditioned(id)"/><label>Zeitperiode:</label></td>
+                            <td><input class="fld" type="text" id="checkboxDisplayAccumulatedChecked"
+                                       th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.accumulated}"
+                                       disabled="true"/></td>
+                            <td class="lbl"
+                                th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.accumulated')}"
+                                th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.accumulated}">
+                                Name Error
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><input type="checkbox" id="checkboxDisplayInterval"
+                                       onclick="disableCheckboxConditioned(id)"/><label>Intervall:</label></td>
+                            <td><input class="fld" type="text" id="checkboxDisplayIntervalChecked"
+                                       th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.interval}"
+                                       disabled="true"/></td>
+                            <td class="lbl"
+                                th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.interval')}"
+                                th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.interval}">Name
+                                Error
+                            </td>
+                        </tr>
+                    </table>
+                </fieldset>
+            </div>
+            <!--Hardware-->
+            <br/><br/>
+            <fieldset>
+                <legend>Geräte - Einschränkungen</legend>
+                <div class="frm">
+                    <fieldset>
+                        <legend>Hardware</legend>
+                        <table>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayHardwareVersion"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Version:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayHardwareVersionChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.version}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.version')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.version}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayHardwareName"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Name:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayHardwareNameChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.name}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.name')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.name}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayHardwareUID"
+                                           onclick="disableCheckboxConditioned(id)"/><label>UID:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayHardwareUIDChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.uid}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.uid')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.uid}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayHardwareRole"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Rolle:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayHardwareRoleChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.role}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.role')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.role}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayHardwareRemark"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Anmerkungen:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayHardwareRemarkChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.remark}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.remark')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.remark}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayHardwareDate"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Datum:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayHardwareDateChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.date}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.date')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.date}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayHardwarePLocation"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Physikalischer Ort:</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxDisplayHardwarePLocationChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.pLocation}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.pLocation')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.pLocation}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayHardwareReference"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Externe Referenz
+                                    (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayHardwareReferenceChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.reference}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.reference')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.reference}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayHardwareService"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Service Anbieter
+                                    (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayHardwareServiceChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.service}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.service')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.service}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayHardwareTransaction"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Transaktionsinformationen:</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxDisplayHardwareTransactionChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.transaction}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.transaction')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.hardware.oexContext.transaction}">
+                                    Name Error
+                                </td>
+                            </tr>
+                        </table>
+                    </fieldset>
+                </div>
+                <!--Software-->
+                <div class="frm">
+                    <fieldset>
+                        <legend>Software</legend>
+                        <table>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplaySoftwareVersion"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Version:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplaySoftwareVersionChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.version}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.version')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.version}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplaySoftwareName"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Name:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplaySoftwareNameChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.name}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.name')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.name}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplaySoftwareUID"
+                                           onclick="disableCheckboxConditioned(id)"/><label>UID:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplaySoftwareUIDChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.uid}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.uid')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.uid}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplaySoftwareRole"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Rolle:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplaySoftwareRoleChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.role}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.role')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.role}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplaySoftwareRemark"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Anmerkungen:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplaySoftwareRemarkChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.remark}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.remark')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.remark}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplaySoftwareDate"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Datum:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplaySoftwareDateChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.date}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.date')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.date}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplaySoftwareDLocation"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Digitaler Ort (URI):</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxDisplaySoftwareDLocationChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.dLocation}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.dLocation')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.dLocation}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplaySoftwareReference"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Externe Referenz
+                                    (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplaySoftwareReferenceChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.reference}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.reference')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.reference}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplaySoftwareService"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Service Anbieter
+                                    (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplaySoftwareServiceChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.service}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.service')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.service}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplaySoftwareTransaction"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Transaktionsinformationen:</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxDisplaySoftwareTransactionChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.transaction}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.transaction')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.transaction}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplaySoftwareEvent"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Event-Typ:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplaySoftwareEventChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.event}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.event')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.software.oexContext.event}">
+                                    Name Error
+                                </td>
+                            </tr>
+                        </table>
+                    </fieldset>
+                </div>
+                <!--Screen-->
+                <div class="frm">
+                    <fieldset>
+                        <legend>Bildschirm</legend>
+                        <table>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayScreenVersion"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Version:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayScreenVersionChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.version}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.version')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.version}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayScreenName"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Name:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayScreenNameChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.name}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.name')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.name}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayScreenUID"
+                                           onclick="disableCheckboxConditioned(id)"/><label>UID:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayScreenUIDChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.uid}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.uid')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.uid}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayScreenRole"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Rolle:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayScreenRoleChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.role}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.role')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.role}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayScreenRemark"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Anmerkungen:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayScreenRemarkChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.remark}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.remark')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.remark}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayScreenDate"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Datum:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayScreenDateChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.date}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.date')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.date}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayScreenPLocation"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Physikalischer Ort:</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxDisplayScreenPLocationChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.pLocation}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.pLocation')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.pLocation}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayScreenDLocation"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Digitaler Ort (URI):</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxDisplayScreenDLocationChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.dLocation}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.dLocation')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.dLocation}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayScreenReference"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Externe Referenz
+                                    (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayScreenReferenceChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.reference}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.reference')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.reference}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayScreenService"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Service Anbieter
+                                    (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayScreenServiceChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.service}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.service')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.service}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayScreenTransaction"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Transaktionsinformationen:</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxDisplayScreenTransactionChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.transaction}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.transaction')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.transaction}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxDisplayScreenEvent"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Event-Typ:</label></td>
+                                <td><input class="fld" type="text" id="checkboxDisplayScreenEventChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.event}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.event')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddDisplay.oexConstraint.screen.oexContext.event}">
+                                    Name Error
+                                </td>
+                            </tr>
+                        </table>
+                    </fieldset>
+                </div>
+            </fieldset>
+        </fieldset>
+        <!--Execution-->
+        <br/>
+        <fieldset>
+            <legend>Ausführung</legend>
+            <div class="frm">
+                <fieldset>
+                    <legend>Allgemein - Einschränkungen</legend>
+                    <table>
+                        <tr>
+                            <td><input type="checkbox" id="checkboxExecuteCount"
+                                       onclick="disableCheckboxConditioned(id)"/><label>Anzahl:</label></td>
+                            <td><input class="fld" type="text" id="checkboxExecuteCountChecked"
+                                       th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.count}"
+                                       disabled="true"/>
+                            </td>
+                            <td class="lbl"
+                                th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.count')}"
+                                th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.count}">Name
+                                Error
+                            </td>
+                        </tr>
+                    </table>
+                </fieldset>
+            </div>
+            <br/><br/>
+            <fieldset>
+                <legend>Geräte - Einschränkungen</legend>
+                <div class="frm">
+                    <fieldset>
+                        <legend>Hardware</legend>
+                        <table>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteHardwareVersion"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Version:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteHardwareVersionChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.version}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.version')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.version}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteHardwareName"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Name:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteHardwareNameChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.name}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.name')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.name}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteHardwareUID"
+                                           onclick="disableCheckboxConditioned(id)"/><label>UID:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteHardwareUIDChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.uid}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.uid')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.uid}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteHardwareRole"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Rolle:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteHardwareRoleChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.role}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.role')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.role}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteHardwareRemark"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Anmerkungen:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteHardwareRemarkChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.remark}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.remark')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.remark}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteHardwareDate"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Datum:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteHardwareDateChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.date}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.date')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.date}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteHardwarePLocation"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Physikalischer Ort:</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxExecuteHardwarePLocationChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.pLocation}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.pLocation')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.pLocation}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteHardwareReference"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Externe Referenz
+                                    (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteHardwareReferenceChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.reference}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.reference')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.reference}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteHardwareService"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Service Anbieter
+                                    (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteHardwareServiceChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.service}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.service')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.service}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteHardwareTransaction"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Transaktionsinformationen:</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxExecuteHardwareTransactionChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.transaction}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.transaction')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.hardware.oexContext.transaction}">
+                                    Name Error
+                                </td>
+                            </tr>
+                        </table>
+                    </fieldset>
+                </div>
+                <div class="frm">
+                    <fieldset>
+                        <legend>Software</legend>
+                        <table>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteSoftwareVersion"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Version:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteSoftwareVersionChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.version}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.version')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.version}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteSoftwareName"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Name:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteSoftwareNameChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.name}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.name')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.name}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteSoftwareUID"
+                                           onclick="disableCheckboxConditioned(id)"/><label>UID:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteSoftwareUIDChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.uid}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.uid')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.uid}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteSoftwareRole"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Rolle:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteSoftwareRoleChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.role}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.role')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.role}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteSoftwareRemark"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Anmerkungen:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteSoftwareRemarkChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.remark}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.remark')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.remark}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteSoftwareDate"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Datum:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteSoftwareDateChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.date}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.date')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.date}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteSoftwareDLocation"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Digitaler Ort (URI):</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxExecuteSoftwareDLocationChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.dLocation}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.dLocation')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.dLocation}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteSoftwareReference"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Externe Referenz
+                                    (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteSoftwareReferenceChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.reference}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.reference')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.reference}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteSoftwareService"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Service Anbieter
+                                    (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteSoftwareServiceChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.service}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.service')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.service}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteSoftwareTransaction"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Transaktionsinformationen:</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxExecuteSoftwareTransactionChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.transaction}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.transaction')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.transaction}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteSoftwareEvent"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Event-Typ:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteSoftwareEventChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.event}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.event')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.software.oexContext.event}">
+                                    Name Error
+                                </td>
+                            </tr>
+                        </table>
+                    </fieldset>
+                </div>
+                <div class="frm">
+                    <fieldset>
+                        <legend>Printer</legend>
+                        <table>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecutePrinterVersion"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Version:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecutePrinterVersionChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.version}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.version')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.version}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecutePrinterName"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Name:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecutePrinterNameChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.name}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.name')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.name}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecutePrinterUID"
+                                           onclick="disableCheckboxConditioned(id)"/><label>UID:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecutePrinterUIDChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.uid}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.uid')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.uid}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecutePrinterRole"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Rolle:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecutePrinterRoleChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.role}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.role')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.role}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecutePrinterRemark"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Anmerkungen:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecutePrinterRemarkChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.remark}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.remark')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.remark}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecutePrinterDate"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Datum:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecutePrinterDateChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.date}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.date')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.date}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecutePrinterPLocation"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Physikalischer Ort:</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxExecutePrinterPLocationChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.pLocation}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.pLocation')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.pLocation}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecutePrinterDLocation"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Digitaler Ort (URI):</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxExecutePrinterDLocationChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.dLocation}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.dLocation')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.dLocation}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecutePrinterReference"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Externe Referenz
+                                    (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecutePrinterReferenceChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.reference}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.reference')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.reference}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecutePrinterService"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Service Anbieter
+                                    (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecutePrinterServiceChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.service}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.service')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.service}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecutePrinterTransaction"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Transaktionsinformationen:</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxExecutePrinterTransactionChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.transaction}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.transaction')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.transaction}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecutePrinterEvent"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Event-Typ:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecutePrinterEventChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.event}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.event')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.printer.oexContext.event}">
+                                    Name Error
+                                </td>
+                            </tr>
+                        </table>
+                    </fieldset>
+                </div>
+            </fieldset>
+            <br/><br/>
+            <fieldset>
+                <legend>Aspekt - Einschränkungen</legend>
+                <div class="frm">
+                    <fieldset>
+                        <legend>Qualität</legend>
+                        <table>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteQualityType"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Typ (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteQualityTypeChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.quality.type}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.quality.type')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.quality.type}">
+                                    Name Error
+                                </td>
+                            </tr>
+                        </table>
+                        <fieldset>
+                            <legend>Bereich</legend>
+                            <table>
+                                <tr>
+                                    <td><input type="checkbox" id="checkboxExecuteQualityRangeMin"
+                                               onclick="disableCheckboxConditioned(id)"/><label>Min:</label></td>
+                                    <td><input class="fld" type="text" id="checkboxExecuteQualityRangeMinChecked"
+                                               th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.quality.oexConstraint.range.min}"
+                                               disabled="true"/></td>
+                                    <td class="lbl"
+                                        th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.quality.oexConstraint.range.min')}"
+                                        th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.quality.oexConstraint.range.min}">
+                                        Name Error
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><input type="checkbox" id="checkboxExecuteQualityRangeMax"
+                                               onclick="disableCheckboxConditioned(id)"/><label>Max:</label></td>
+                                    <td><input class="fld" type="text" id="checkboxExecuteQualityRangeMaxChecked"
+                                               th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.quality.oexConstraint.range.max}"
+                                               disabled="true"/></td>
+                                    <td class="lbl"
+                                        th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.quality.oexConstraint.range.max')}"
+                                        th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.quality.oexConstraint.range.max}">
+                                        Name Error
+                                    </td>
+                                </tr>
+                            </table>
+                        </fieldset>
+                    </fieldset>
+                </div>
+                <div class="frm">
+                    <fieldset>
+                        <legend>Format</legend>
+                        <table>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteFormatType"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Typ (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteFormatTypeChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.format.type}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.format.type')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.format.type}">
+                                    Name Error
+                                </td>
+                            </tr>
+                        </table>
+                    </fieldset>
+                </div>
+            </fieldset>
+            <br/><br/>
+            <fieldset>
+                <legend>Nutzer - Einschränkungen</legend>
+                <div class="frm">
+                    <fieldset>
+                        <legend>Individuum</legend>
+                        <table>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteIndividualName"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Name:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteIndividualNameChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.name}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.name')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.name}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteIndividualUID"
+                                           onclick="disableCheckboxConditioned(id)"/><label>UID:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteIndividualUIDChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.uid}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.uid')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.uid}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteIndividualRole"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Rolle:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteIndividualRoleChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.role}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.role')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.role}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteIndividualRemark"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Anmerkungen:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteIndividualRemarkChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.remark}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.remark')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.remark}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteIndividualDate"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Datum:</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteIndividualDateChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.date}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.date')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.date}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteIndividualPLocation"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Physikalischer Ort:</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxExecuteIndividualPLocationChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.pLocation}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.pLocation')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.pLocation}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteIndividualReference"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Externe Referenz
+                                    (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteIndividualReferenceChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.reference}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.reference')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.reference}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteIndividualService"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Service Anbieter
+                                    (URI):</label></td>
+                                <td><input class="fld" type="text" id="checkboxExecuteIndividualServiceChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.service}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.service')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.service}">
+                                    Name Error
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" id="checkboxExecuteIndividualTransaction"
+                                           onclick="disableCheckboxConditioned(id)"/><label>Transaktionsinformationen:</label>
+                                </td>
+                                <td><input class="fld" type="text" id="checkboxExecuteIndividualTransactionChecked"
+                                           th:field="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.transaction}"
+                                           disabled="true"/></td>
+                                <td class="lbl"
+                                    th:if="${#fields.hasErrors('odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.transaction')}"
+                                    th:errors="*{odrlBase.oexAgreement.oexPermission.ddExecute.oexConstraint.individual.oexContext.transaction}">
+                                    Name Error
+                                </td>
+                            </tr>
+                        </table>
+                    </fieldset>
+                </div>
+            </fieldset>
+        </fieldset>
+    </fieldset>
+    <h2>3. Lizenz sichern und herunterladen</h2>
+    <p class="redtext" th:if="${error}" th:text="${error}"/>
+    <input type="submit" value="Lizenz sichern"/>
+</form>
+<hr/>
+<form th:action="@{/logout}" method="post">
+    <p><input type="submit" value="Ausloggen"/></p>
+</form>
+
+<!-- JS Script -->
+<script language="javascript" type="text/javascript">
+    // function to enable text input for each agreement
+    function disableCheckboxConditioned(id) {
+        if (document.getElementById(id).checked) {
+            document.getElementById(id + "Checked").disabled = false;
+
+        }
+        else {
+            document.getElementById(id + "Checked").disabled = true;
+
+        }
+    }
+</script>
+</body>
+</html>
